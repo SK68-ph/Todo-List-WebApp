@@ -15,6 +15,11 @@ Live Demo: https://flame-todo-list.web.app
 
 Change MySQL connectionstring in server/appsettings.json.
 
+Open package manager console and update the database using this command
+```
+Update-Database
+```
+
 Build docker image using server/Dockerfile.
 
 Host to serverless platforms like Cloud Run, Amazon Lambda.
