@@ -1,0 +1,68 @@
+<div class="bg-image">
+    <div class="wrapper">
+      <div class="main-title">
+        <header>Todo App</header>
+        <button (click)="onLogout()" class="logout">
+          <i class="fas fa-right-from-bracket"></i>
+        </button>
+      </div>
+      <div class="inputField">
+        <input
+          type="text"
+          placeholder="Add your new todo"
+          id="todotext"
+          name="todotext"
+          #todotext
+          (keyup)="onInputKeyUp()"
+          (keyup.enter)="onAddTask()"
+        />
+        <button [class.active]="btnAddTaskActive" (click)="onAddTask()">
+          <i class="fas fa-plus"></i>
+        </button>
+      </div>
+      <ul class="todoList">
+        <li *ngFor="let tasks of TASKS">
+          <p *ngIf="tasks.isTaskActive == false" class="textinactive">
+            {{ tasks.TaskText
+            }}<button (click)="onRemoveTask(tasks.Id)" class="icon">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </p>
+          <p *ngIf="tasks.isTaskActive == true">
+            {{ tasks.TaskText
+            }}<button (click)="onCompleteTask(tasks.Id)" class="icon active-icon">
+              <i class="fa-solid fa-check"></i>
+            </button>
+          </p>
+        </li>
+      </ul>
+      <div style="display: flex; justify-content: center;padding-top: 15px;">
+        <mat-progress-spinner *ngIf="loading$ | async" [diameter]="50" [mode]="'indeterminate'"></mat-progress-spinner>
+      </div>
+      <div class="footer">
+        <span
+          ><span class="pendingTasks">{{ getTaskCount().activeTaskCount }}</span>
+          Active tasks </span
+        >
+        <div class="footer-buttons">
+            <button
+              style="margin-right: 10px;"
+              [class.active]="getTaskCount().completedTaskCount > 0"
+              (click)="clearCompleteTask()"
+            >
+              Clear Completed
+            </button>
+            <button [class.active]="getTaskCount().activeTaskCount > 0" (click)="clearAllTask()">
+              Clear All
+            </button>
+        </div>
+      </div>
+      
+      <div *ngIf="isSuccessful === false" class="error-status">
+        <p>
+          An Error Occured while processing your request.
+        </p>
+      </div>
+    </div>
+  </div>
+  
