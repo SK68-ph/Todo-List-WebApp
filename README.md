@@ -1,10 +1,11 @@
 # Todo-List-WebApp
 
-A simple todo list fullstack webapp made in angular and asp.net core 6
+A simple task manager progressive web app made in angular and asp.net core 6
 
 ## Features
 - Token based authentication(JWT)
 - Reactive Task List
+- Online and offline support
 
 
 Live Demo: https://flame-todo-list.web.app
@@ -13,7 +14,7 @@ Live Demo: https://flame-todo-list.web.app
 
 #### Server:
 
-Change MySQL connectionstring in server/appsettings.json.
+Change MySQL connectionstring and JWT settings in server/appsettings.json.
 
 Open package manager console and update the database using this command
 ```
