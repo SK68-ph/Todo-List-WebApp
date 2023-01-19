@@ -29,33 +29,33 @@ export class TaskService {
     return { 'Authorization': 'Bearer ' + localStorage.getItem('token') };
   }
 
-  getTasks(): Observable<Task[]> {
+  getTasks(): Promise<any> {
     const headers = this.getHttpHeader();
-    return this.http.get<Task[]>(this.base_url + "api/Tasks", { headers });
+    return this.http.get<Task[]>(this.base_url + "api/Tasks", { headers }).toPromise();
   }
 
-  deleteTask(id?: number): Observable<any> {
+  deleteTask(id?: number): Promise<any> {
     const headers = this.getHttpHeader();
-    return this.http.delete( this.base_url + "api/Tasks/" + id, { headers });
+    return this.http.delete( this.base_url + "api/Tasks/" + id, { headers }).toPromise();
   }
 
-  updateTask(task: Task): Observable<any> {
+  updateTask(task: Task): Promise<any> {
     const headers = this.getHttpHeader();
-    return this.http.put(this.base_url + "api/Tasks/" + task.Id, task, { headers });
+    return this.http.put(this.base_url + "api/Tasks/" + task.Id, task, { headers }).toPromise();
   }
   
-  removeAllTask(): Observable<any>{
+  removeAllTask(): Promise<any>{
     const headers = this.getHttpHeader();
-    return this.http.delete(this.base_url + "api/Tasks", { headers });
+    return this.http.delete(this.base_url + "api/Tasks", { headers }).toPromise();
   }
 
-  getServerStatus(): Observable<any>{
+  getServerStatus(): Promise<any>{
     const headers = this.getHttpHeader();
-    return this.http.get(this.base_url + "api/Tasks/PingServer", { headers ,responseType: 'text'});
+    return this.http.get(this.base_url + "api/Tasks/PingServer", { headers ,responseType: 'text'}).toPromise();
   }
 
-  addTask(task: Task): Observable<any> {
+  addTask(task: Task): Promise<any> {
     const headers = this.getHttpHeader();
-    return this.http.post(this.base_url + "api/Tasks", task, { headers ,responseType: 'text'});
+    return this.http.post(this.base_url + "api/Tasks", task, { headers ,responseType: 'text'}).toPromise();
   }
 }

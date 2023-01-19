@@ -8,7 +8,7 @@ import {
 } from '@angular/core';
 import { Task } from '../Task';
 import { LoadingService } from '../service/loading.service';
-import { delay, retry, Subscription } from 'rxjs';
+import { Subscription } from 'rxjs';
 import { OnlineStatusService, OnlineStatusType } from 'ngx-online-status';
 
 @Component({
@@ -75,62 +75,56 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
   }
 
-  prepareSync() {
+  async prepareSync() {
     this.loader.show();
-    this.taskService
+    await this.taskService
       .getServerStatus()
-      .pipe(
-        retry(3), // you retry 3 times
-        delay(2000) // each retry will start after 1 second,
-      )
-      .subscribe(
-        (response) => {
-          if (response == 'ok') {
-            this.syncLocalTasks();
-          }
-          this.loader.hide();
-        },
-        () => {
-          this.displayError();
-        },
-        () => this.loader.hide()
-      );
+      .then((response) => {
+        if (response == 'ok') {
+          this.syncLocalTasks();
+        }
+        this.loader.hide();
+      })
+      .catch((err) => {
+        this.displayError();
+        this.loader.hide();
+      })
+      .finally(() => {
+        this.loader.hide();
+      });
   }
 
-  getTasksDb() {
+  async getTasksDb() {
     this.loader.show();
-    this.taskService
+    await this.taskService
       .getTasks()
-      .pipe(
-        retry(3), // you retry 3 times
-        delay(1000) // each retry will start after 1 second,
-      )
-      .subscribe(
-        (task) => {
-          task.forEach((element) => {
-            this.TASKS.push({
-              Id: element.Id,
-              TaskText: element.TaskText,
-              isTaskActive: element.isTaskActive,
-              isTaskModified: false,
-              isTaskDeleted: false,
-              isTaskSynced: true
-            });
+      .then((task: Task[]) => {
+        this.TASKS = [];
+        task.forEach((element) => {
+          this.TASKS.push({
+            Id: element.Id,
+            TaskText: element.TaskText,
+            isTaskActive: element.isTaskActive,
+            isTaskModified: false,
+            isTaskDeleted: false,
+            isTaskSynced: true,
           });
-          this.isSuccessful = true;
-          this.setTasksLocal();
-        },
-        (error) => {
-          if (error.status == 401) {
-            this.loader.hide();
-            this.onLogout();
-          } else {
-            this.displayError();
-            this.loader.hide();
-          }
-        },
-        () => this.loader.hide()
-      );
+        });
+        this.isSuccessful = true;
+        this.setTasksLocal();
+      })
+      .catch((err) => {
+        if (err.status == 401) {
+          this.loader.hide();
+          this.onLogout();
+        } else {
+          this.displayError();
+          this.loader.hide();
+        }
+      })
+      .finally(() => {
+        this.loader.hide();
+      });
   }
 
   getTasksLocal() {
@@ -177,29 +171,21 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.isSuccessful = false;
   }
 
-  AddTaskDb(index: number) {
+  async AddTaskDb(index: number) {
     this.loader.show();
-    this.taskService
+    await this.taskService
       .addTask(this.TASKS[index])
-      .pipe(
-        retry(3), // you retry 3 times
-        delay(1000) // each retry will start after 1 second,
-      )
-      .subscribe(
-        (data) => {
-          this.isSuccessful = true;
-          this.TASKS[index].Id = Number(data);
-          this.TASKS[index].isTaskSynced = true;
-          this.setTasksLocal();
-        },
-        (error) => {
-          if (error.status != 204) {
-            this.displayError();
-            this.loader.hide();
-          }
-        },
-        () => this.loader.hide()
-      );
+      .then((data) => {
+        this.isSuccessful = true;
+        this.TASKS[index].Id = Number(data);
+        this.TASKS[index].isTaskSynced = true;
+        this.setTasksLocal();
+        this.loader.hide();
+      })
+      .catch((err) => {
+        this.displayError();
+        this.loader.hide();
+      })
   }
 
   onAddTask() {
@@ -221,45 +207,41 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.btnAddTaskActive = false;
   }
 
-  removeTaskDb(index: any) {
-    this.loader.show();
+  async removeTaskDb(index: any) {
     const id = this.TASKS[index].Id;
-    this.taskService
+    await this.taskService
       .deleteTask(id)
-      .pipe(
-        retry(3), // you retry 3 times
-        delay(1000) // each retry will start after 1 second,
-      )
-      .subscribe(
-        () => {
-          this.TASKS.splice(index,1);
-          this.isSuccessful = true;
-          this.loader.hide();
-          this.setTasksLocal();
-        },
-        (error) => {
-          if (error.status != 204) {
-            this.displayError();
-            this.loader.hide();
-          }
-        }
-      );
+      .then(() => {
+        this.TASKS.splice(index,1);
+        this.isSuccessful = true;
+        this.loader.hide();
+        this.setTasksLocal();
+      })
+      .catch((err) => {
+        this.displayError();
+      })
   }
 
   onRemoveTask(index: any) {
-    console.log(index)
-    console.log(this.TASKS[index])
-    console.log(this.isOnline)
+    console.log(index);
+    console.log(this.TASKS[index]);
+    console.log(this.isOnline);
     if (this.isOnline == 1) {
       this.removeTaskDb(index);
-    } 
+    }
     if (this.isOnline == 0) {
-      if (this.TASKS[index].isTaskSynced == true || this.TASKS[index].isTaskModified == true && this.TASKS[index].Id != 0) {
+      if (
+        this.TASKS[index].isTaskSynced == true ||
+        (this.TASKS[index].isTaskModified == true && this.TASKS[index].Id != 0)
+      ) {
         this.TASKS[index].isTaskSynced = false;
         this.TASKS[index].isTaskDeleted = true;
         console.log('removing task from db');
-      } 
-      else if (this.TASKS[index].isTaskSynced == false && this.TASKS[index].isTaskModified == true && this.TASKS[index].Id == 0){
+      } else if (
+        this.TASKS[index].isTaskSynced == false &&
+        this.TASKS[index].isTaskModified == true &&
+        this.TASKS[index].Id == 0
+      ) {
         this.TASKS.splice(index, 1);
         console.log('removing local task');
       }
@@ -267,29 +249,19 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.setTasksLocal();
   }
 
-  updateTaskDb(index: any) {
-    this.loader.show();
+  async updateTaskDb(index: any) {
     this.TASKS[index].isTaskActive = false;
-    this.taskService
+    await this.taskService
       .updateTask(this.TASKS[index])
-      .pipe(
-        retry(3), // you retry 3 times
-        delay(1000) // each retry will start after 1 second,
-      )
-      .subscribe(
-        (data) => {
-          this.TASKS[index].isTaskSynced = true;
-          this.isSuccessful = true;
-          this.loader.hide();
-          this.setTasksLocal();
-        },
-        (error) => {
-          if (error.status != 204) {
-            this.displayError();
-            this.loader.hide();
-          }
-        }
-      );
+      .then(() => {
+        this.TASKS[index].isTaskSynced = true;
+        this.isSuccessful = true;
+        this.loader.hide();
+        this.setTasksLocal();
+      })
+      .catch(() => {
+        this.displayError();
+      })
   }
 
   onCompleteTask(index: any) {
@@ -304,23 +276,19 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.setTasksLocal();
   }
 
-  clearAllTaskDb() {
-    this.taskService
+  async clearAllTaskDb() {
+    await this.taskService
       .removeAllTask()
-      .pipe(
-        retry(3), // you retry 3 times
-        delay(1000) // each retry will start after 1 second,
-      )
-      .subscribe(
-        (data) => {
-          this.isSuccessful = true;
-        },
-        (error) => {
-          if (error.status != 204) {
-            this.displayError();
-          }
-        }
-      );
+      .then(() => {
+        this.isSuccessful = true;
+      })
+      .catch(() => {
+        this.displayError();
+        this.loader.hide();
+      })
+      .finally(() => {
+        this.loader.hide();
+      });
   }
 
   clearAllTask() {
@@ -338,7 +306,7 @@ export class HomeComponent implements OnInit, OnDestroy {
         }
       }
     }
-    
+
     this.setTasksLocal();
   }
 
