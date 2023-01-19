@@ -8,7 +8,7 @@ import {
 } from '@angular/core';
 import { Task } from '../Task';
 import { LoadingService } from '../service/loading.service';
-import { Subscription } from 'rxjs';
+import { delay, Subscription } from 'rxjs';
 import { OnlineStatusService, OnlineStatusType } from 'ngx-online-status';
 
 @Component({
@@ -29,19 +29,20 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.onlineStatusService.status.subscribe((status: OnlineStatusType) => {
       this.isOnline = status;
       if (status == 1) {
-        this.prepareSync();
+        this.tryConnect(this.prepareSync());;
       }
     });
   }
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
     if (!this.taskService.isLoggedIn()) {
       this.onLogout();
     }
+    this.getTasksLocal();
     if (this.isOnline == 1) {
-      this.prepareSync();
+      await this.tryConnect(this.prepareSync());
+      await this.getTasksDb();
     }
-    this.getTasks();
   }
 
   ngOnDestroy(): void {
@@ -51,24 +52,24 @@ export class HomeComponent implements OnInit, OnDestroy {
   public TASKS: Task[] = [];
   isSuccessful: boolean = true;
 
-  syncLocalTasks() {
+  async syncLocalTasks() {
     console.log('Syncing');
     for (let index = 0; index < this.TASKS.length; index++) {
       const element = this.TASKS[index];
       if (element.isTaskSynced == false) {
         if (element.Id == 0) {
           console.log('Adding from db');
-          this.AddTaskDb(index);
+          await this.AddTaskDb(index);
           continue;
         }
         if (element.isTaskDeleted == true) {
           console.log('Deleting from db');
-          this.removeTaskDb(index);
+          await this.removeTaskDb(index);
           continue;
         }
         if (element.isTaskModified == true) {
           console.log('Updating to db');
-          this.updateTaskDb(index);
+          await this.updateTaskDb(index);
           continue;
         }
       }
@@ -79,9 +80,9 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.loader.show();
     await this.taskService
       .getServerStatus()
-      .then((response) => {
+      .then(async (response) => {
         if (response == 'ok') {
-          this.syncLocalTasks();
+          await this.syncLocalTasks();
         }
         this.loader.hide();
       })
@@ -91,11 +92,30 @@ export class HomeComponent implements OnInit, OnDestroy {
       })
       .finally(() => {
         this.loader.hide();
+        console.log('done syncing');
       });
+  }
+
+  delay(ms: any, value: any) {
+    return new Promise((resolve) => setTimeout(resolve, ms, value));
+  }
+
+  async tryConnect(fn:Promise<void>) {
+    for (let attempt = 0; attempt < 5; ++attempt) {
+      if (attempt > 0) {
+        await delay(1000);
+      }
+      try {
+        await fn;
+        return;
+      } catch {}
+    }
+    throw new Error("Couldn't create connection");
   }
 
   async getTasksDb() {
     this.loader.show();
+    console.log('fetching tasks from db');
     await this.taskService
       .getTasks()
       .then((task: Task[]) => {
@@ -123,6 +143,7 @@ export class HomeComponent implements OnInit, OnDestroy {
         }
       })
       .finally(() => {
+        console.log('done fetching tasks');
         this.loader.hide();
       });
   }
@@ -135,9 +156,9 @@ export class HomeComponent implements OnInit, OnDestroy {
     localStorage.setItem('tasks', JSON.stringify(this.TASKS));
   }
 
-  getTasks() {
+  async getTasks() {
     if (this.isOnline == 1) {
-      this.getTasksDb();
+      await this.getTasksDb();
     } else {
       this.getTasksLocal();
     }
@@ -172,6 +193,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   async AddTaskDb(index: number) {
+    console.log('adding task');
     this.loader.show();
     await this.taskService
       .addTask(this.TASKS[index])
@@ -181,11 +203,12 @@ export class HomeComponent implements OnInit, OnDestroy {
         this.TASKS[index].isTaskSynced = true;
         this.setTasksLocal();
         this.loader.hide();
+        console.log('done adding task');
       })
       .catch((err) => {
         this.displayError();
         this.loader.hide();
-      })
+      });
   }
 
   onAddTask() {
@@ -212,14 +235,14 @@ export class HomeComponent implements OnInit, OnDestroy {
     await this.taskService
       .deleteTask(id)
       .then(() => {
-        this.TASKS.splice(index,1);
+        this.TASKS.splice(index, 1);
         this.isSuccessful = true;
         this.loader.hide();
         this.setTasksLocal();
       })
       .catch((err) => {
         this.displayError();
-      })
+      });
   }
 
   onRemoveTask(index: any) {
@@ -261,7 +284,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       })
       .catch(() => {
         this.displayError();
-      })
+      });
   }
 
   onCompleteTask(index: any) {
