@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { Task } from '../Task';
-import { server } from '../Backend';
+import { API_LINK } from '../Backend';
 import { HttpClient } from "@angular/common/http";
 import {Router} from "@angular/router"
 
@@ -10,10 +10,14 @@ import {Router} from "@angular/router"
 })
 export class TaskService {
   
-  base_url = server.base_url;
+  base_url = API_LINK.base_url;
 
   constructor(public http: HttpClient,private router: Router) {
     
+  }
+
+  isLoggedIn(){
+    return localStorage.getItem('token') != null;
   }
 
   logout() {
@@ -43,6 +47,11 @@ export class TaskService {
   removeAllTask(): Observable<any>{
     const headers = this.getHttpHeader();
     return this.http.delete(this.base_url + "api/Tasks", { headers });
+  }
+
+  getServerStatus(): Observable<any>{
+    const headers = this.getHttpHeader();
+    return this.http.get(this.base_url + "api/Tasks/PingServer", { headers ,responseType: 'text'});
   }
 
   addTask(task: Task): Observable<any> {

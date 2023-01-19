@@ -1,15 +1,14 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { Task } from '../Task';
 import { HttpClient } from "@angular/common/http";
 import {Router} from "@angular/router"
-import { server } from '../Backend';
+import { API_LINK } from '../Backend';
 
 @Injectable({
   providedIn: 'root'
 })
 export class LoginService {
-  base_url = server.base_url;
+  base_url = API_LINK.base_url;
 
   constructor(public http: HttpClient,private router: Router) {     
     if (localStorage.getItem("token") !== null) {

@@ -20,21 +20,24 @@
           <i class="fas fa-plus"></i>
         </button>
       </div>
+      <!-- || tasks.isTaskDeleted == false" -->
       <ul class="todoList">
-        <li *ngFor="let tasks of TASKS">
-          <p *ngIf="tasks.isTaskActive == false" class="textinactive">
-            {{ tasks.TaskText
-            }}<button (click)="onRemoveTask(tasks.Id)" class="icon">
-              <i class="fa-solid fa-trash-can"></i>
-            </button>
-          </p>
-          <p *ngIf="tasks.isTaskActive == true">
-            {{ tasks.TaskText
-            }}<button (click)="onCompleteTask(tasks.Id)" class="icon active-icon">
-              <i class="fa-solid fa-check"></i>
-            </button>
-          </p>
-        </li>
+        <ng-container *ngFor="let tasks of TASKS; index as i">
+            <li *ngIf="tasks.isTaskDeleted != true">
+              <p *ngIf="tasks.isTaskActive == false " class="textinactive">
+                {{ tasks.TaskText
+                }}<button (click)="onRemoveTask(i)" class="icon">
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
+              </p>
+              <p *ngIf="tasks.isTaskActive == true">
+                {{ tasks.TaskText
+                }}<button (click)="onCompleteTask(i)" class="icon active-icon">
+                  <i class="fa-solid fa-check"></i>
+                </button>
+              </p>
+            </li>
+        </ng-container>
       </ul>
       <div style="display: flex; justify-content: center;padding-top: 15px;">
         <mat-progress-spinner *ngIf="loading$ | async" [diameter]="50" [mode]="'indeterminate'"></mat-progress-spinner>
@@ -45,13 +48,6 @@
           Active tasks </span
         >
         <div class="footer-buttons">
-            <button
-              style="margin-right: 10px;"
-              [class.active]="getTaskCount().completedTaskCount > 0"
-              (click)="clearCompleteTask()"
-            >
-              Clear Completed
-            </button>
             <button [class.active]="getTaskCount().activeTaskCount > 0" (click)="clearAllTask()">
               Clear All
             </button>
