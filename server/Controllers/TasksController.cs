@@ -23,6 +23,25 @@ namespace server.Models
         {
             _context = context;
         }
+        private bool UserExists(string username)
+        {
+            return _context.Users.Any(e => e.Username.ToLower() == username.ToLower());
+        }
+
+        // GET: api/Tasks
+        [HttpGet("PingServer")]
+        [Authorize]
+        public ActionResult GetPingServer()
+        {
+            var currentUsername = GetCurrentUser();
+
+            if (currentUsername.IsNullOrEmpty())
+                if (UserExists(currentUsername) == false)
+                    return BadRequest("Failed to verify current user");
+
+
+            return Ok("ok");
+        }
 
         // GET: api/Tasks
         [HttpGet]
